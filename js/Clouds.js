@@ -1,0 +1,118 @@
+class Clouds
+{   constructor()
+    {   this.list = [];
+        this.totalClouds = 100;
+
+        for(let i = 0; (i < this.totalClouds); i++)
+        {   this.list[i] = new Cloud(Math.trunc(Math.random()*canvas.width), Math.trunc(Math.random()*canvas.height*0.1)+canvas.height*0.01, Math.trunc(Math.random()*canvas.width*0.08)+canvas.width*0.01, Math.trunc(Math.random()*canvas.height*0.08)+canvas.height*0.01);
+        }
+
+        this.list.sort((a, b) => a.xVelocity - b.xVelocity)
+    }
+
+    update()
+    {   for(let i = 0; (i < this.list.length); i++)
+        {   this.list[i].update();
+        }
+    }
+
+    draw()
+    {   for(let i = 0; (i < this.list.length); i++)
+        {   this.list[i].draw();
+        }
+    }
+}
+
+class Cloud
+{   constructor(x, y, width, height)
+    {   this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.xVelocity = (this.width/canvas.width*0.09 + this.height/canvas.height*0.09) * 100;
+
+        this.cumulus = [
+                           new Cumulus(0, this.width*0.18, this.width*0.27),
+                           new Cumulus(Math.PI*2/5, this.width*0.16, this.width*0.15),
+                           new Cumulus(Math.PI*2/5*2, this.width*0.17, this.width*0.17),
+                           new Cumulus(Math.PI*2/5*3, this.width*0.20, this.width*0.26),
+                           new Cumulus(Math.PI*2/5*4, this.width*0.18, this.width*0.2)
+                       ];
+
+        this.drops = [];
+    }
+
+    update()
+    {   this.x = (this.x < canvas.width) ? this.x+this.xVelocity : -this.width;
+        if(time.state)
+        {   if(Math.random() <= 0.7 && this.drops.length < 3)
+            {   this.drops.push(new Drop(Math.floor(Math.random()*(this.x+this.width)), this.y, (this.width/canvas.width*0.09 + this.height/canvas.height*0.09)*1000));
+            }
+
+            for (let i = 0; i < this.drops.length; i++)
+            {   this.drops[i].update();
+                if (this.drops[i].y > canvas.height)
+                {   this.drops[i].y = this.y+this.height;
+                    this.drops[i].x = Math.floor(Math.random()*(this.x+this.width));
+                }
+            }
+        }
+        else
+        {   this.drops = [];
+        }
+    }
+
+    draw()
+    {   let centerX = this.x + this.width/2;
+        let centerY = this.y + this.height/2;
+
+        for(let i = 0; (i < this.drops.length); i++)
+        {   this.drops[i].draw();
+        }
+
+        context.fillStyle = "black";
+        for(let i = 0; (i < this.cumulus.length); i++)
+        {   let cumulus = this.cumulus[i]
+                          context.beginPath();
+            context.arc(centerX+Math.cos(cumulus.angle)*cumulus.distance, centerY+Math.sin(cumulus.angle)*cumulus.distance, cumulus.radius+2, 0, Math.PI*2);
+            context.fill();
+        }
+
+        context.fillStyle = time.state ? "gray" : "white";
+        for(let i = 0; (i < this.cumulus.length); i++)
+        {   let cumulus = this.cumulus[i]
+                          context.beginPath();
+            context.arc(centerX+Math.cos(cumulus.angle)*cumulus.distance, centerY+Math.sin(cumulus.angle)*cumulus.distance, cumulus.radius, 0, Math.PI*2);
+            context.fill();
+        }
+    }
+}
+
+class Cumulus
+{   //          posição que vai ficar  quão longe do centro     tamanho
+    constructor(angle,                  distance,               radius)
+    {   this.angle = angle;
+        this.distance = distance;
+        this.radius = radius;
+    }
+}
+
+class Drop
+{   constructor(x, y, size)
+    {   this.x = x;
+        this.y = y;
+        this.size = size;
+        this.speed = this.size*1.5;
+        this.color = "rgba(64, 103, 177, 1)";
+    }
+
+    draw()
+    {   context.fillStyle = this.color;
+        context.fillRect(this.x, this.y, this.size/2.5, this.size);
+    }
+
+    update()
+    {   this.y += this.speed;
+        this.x += this.speed/4;
+    }
+}

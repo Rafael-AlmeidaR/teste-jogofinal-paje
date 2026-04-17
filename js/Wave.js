@@ -1,0 +1,45 @@
+class Wave
+{   constructor()
+    {   this.actualWave = 0;
+        this.waveDuration = FPS * 30;
+        this.waveFrames = 0;
+        this.spawnInterval = FPS * 2;
+        this.spawnTimer = 0;
+        this.spawnChance = 0.5;
+        this.spawnBelowChance = 0.1;
+        this.zombieSpawnChance = 0.7;
+
+    }
+    update()
+    {   this.waveFrames++;
+        if (this.waveFrames == this.waveDuration)
+        {   this.waveFrames = 0;
+            this.nextWave();
+        }
+        this.spawnTimer++;
+        if (this.spawnTimer >= this.spawnInterval)
+        {   this.spawnTimer = 0;
+            this.spawn();
+        }
+    }
+
+    spawn()
+    {   if (Math.random() <= this.spawnChance)
+        {   let spawnBelow = Math.random() <= this.spawnBelowChance;
+            let grave = Math.trunc(Math.random() * 2) + spawnBelow * 2;
+            let EnemyType = Math.random() <= this.zombieSpawnChance ? Zombie : (Math.random() <= 0.5 ? Runner : Dancer)
+                            graves.enemies.push(new EnemyType(graves.list[grave].x, graves.list[grave].y - canvas.height * 0.02, graves.list[grave].direction));
+
+            sounds.graveRumble.play();
+        }
+    }
+
+    nextWave()
+    {   this.zombieSpawnChance -= 0.02 * (this.zombieSpawnChance > 0.2);
+        this.spawnChance += 0.01 * (this.spawnChance < 0.8);
+        this.spawnInterval -= 1 * (this.spawnInterval > FPS);
+        this.spawnBelowChance += 0.01 * (this.spawnBelowChance < 0.5)
+                                 this.actualWave++;
+        sounds.siren.play();
+    }
+}

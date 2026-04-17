@@ -1,0 +1,38 @@
+class Projectile extends Entity
+{   constructor(x, y, width, height, image, damage, xVelocity, yVelocity, soundImpact = null)
+    {   super(x, y, width, height, image, Math.sign(xVelocity));
+        this.damage = damage;
+        this.soundImpact = soundImpact;
+        this.xVelocity = xVelocity;
+        this.yVelocity = yVelocity;
+    }
+
+    update()
+    {   this.x += this.xVelocity;
+        this.y += this.yVelocity;
+    }
+
+    collide(entities, isPlayer = false)
+    {   for (let i = 0; (i < entities.length); i++)
+        {   if (super.collide(entities[i]))
+            {   if (entities[i].life)
+                {   if (entities[i].life.actual)
+                    {   entities[i].life.actual -= this.damage;
+                        if (entities[i].life.actual <= 0)
+                        {   entities.splice(entities.indexOf(entities[i]), 1);
+                            if (isPlayer)
+                            {   player.enemiesKilled++;
+                                player.suns += 50;
+                            }
+                        }
+                    }
+                }
+                if (this.soundImpact) {
+                    sounds.playAudioDuplicated(this.soundImpact);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+}

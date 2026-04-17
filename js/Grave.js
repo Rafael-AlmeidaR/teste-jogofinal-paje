@@ -1,0 +1,37 @@
+class Graves
+{   constructor()
+    {   this.list = [
+                        new Grave(canvas.width * 0.01, canvas.height * 0.15, 1),
+                        new Grave(canvas.width * 0.94, canvas.height * 0.15, -1),
+                        new Grave(canvas.width * 0.01, canvas.height * 0.88, 1),
+                        new Grave(canvas.width * 0.94, canvas.height * 0.88, -1)
+                 ];
+
+        this.enemies = [];
+    }
+
+
+
+    update()
+    {   for (let i = 0; (i < this.enemies.length); i++)
+        {   this.enemies[i].update();
+        }
+    }
+
+    draw()
+    {   for (let i = 0; (i < this.list.length); i++)
+        {   this.list[i].draw();
+        }
+        for (let i = 0; (i < this.enemies.length); i++)
+        {   this.enemies[i].draw();
+        }
+    }
+}
+
+class Grave extends Entity
+{   constructor(x, y, direction)
+    {   let random = Math.trunc(Math.random() * 3) + 1;
+        super(x, y, canvas.height * 0.1, canvas.height * 0.12, "grave-" + random + ".png", direction);
+    }
+}
+

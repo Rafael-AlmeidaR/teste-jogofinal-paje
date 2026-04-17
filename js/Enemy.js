@@ -1,0 +1,178 @@
+class Enemy extends Entity
+{   constructor(x, y, direction, life, type)
+    {   super(x, y, canvas.height * 0.09, canvas.height * 0.1, "", direction, life);
+
+        this.yVelocity = 0;
+        this.gravity = canvas.height * 0.0021772939346811817;
+
+        this.sprites =
+        {   walking:
+            [
+                new Image(),
+                new Image(),
+                new Image(),
+                new Image()
+            ],
+attacking:
+            [
+                new Image(),
+                new Image(),
+                new Image(),
+                new Image(),
+                new Image()
+            ]
+        }
+
+        for (let i = 0; i < this.sprites.walking.length; i++)
+        {   this.sprites.walking[i].src = "./imgs/sprites/" + type + "/" + type + "-walking-" + i + ".png";
+        }
+
+        for (let i = 0; i < this.sprites.attacking.length; i++)
+        {   this.sprites.attacking[i].src = "./imgs/sprites/" + type + "/" + type + "-attacking-" + i + ".png";
+        }
+
+        this.currentFrame = 0;
+        this.currentSprite = 0;
+        this.state = "walking";
+    }
+
+    update()
+    {   this.yVelocity += this.gravity;
+        this.y += this.yVelocity;
+        if (this.collide(plataforms.list))
+        {   this.y -= this.yVelocity;
+            this.yVelocity = this.yVelocity < 0 ? this.gravity : 0;
+        }
+        this.x += this.xVelocity;
+        if (this.collide(plataforms.list))
+        {   this.x -= this.xVelocity;
+        }
+        if (this.x < -this.width || this.x > canvas.width)
+        {   this.x = canvas.width - (this.x + this.width);
+
+        }
+
+        if (super.collide(dave))
+        {   this.attack(dave)
+        }
+        else
+        {   if (super.collide(player))
+            {   this.attack(player);
+            }
+            else
+            {   let collided = false;
+                for (let i = 0; (i < pots.list.length); i++)
+                {   if (pots.list[i].plant)
+                    {   if (super.collide(pots.list[i].plant))
+                        {   this.attack(pots.list[i].plant);
+                            collided = true;
+                        }
+                    }
+                }
+                if (!collided)
+                {   this.xVelocity = this.baseVelocity;
+                    this.state = "walking";
+                }
+            }
+        }
+        this.animate();
+    }
+
+    attack(entity)
+    {   this.xVelocity = 0;
+        entity.life.actual -= this.damage;
+        this.state = "attacking";
+        sounds["chomp" + (Math.trunc(Math.random() * 2))].play();
+    }
+
+    animate()
+    {   this.currentFrame = (this.currentFrame + 1) % (this.sprites[this.state].length * this.framesSprite[this.state]);
+        this.currentSprite = (this.currentSprite + !(this.currentFrame % this.framesSprite[this.state])) % this.sprites[this.state].length;
+        this.image = this.sprites[this.state][this.currentSprite];
+    }
+
+    collide(entities)
+    {   for (let i = 0; (i < entities.length); i++)
+        {   if (super.collide(entities[i]))
+            {   return true;
+            }
+        }
+        return false;
+    }
+}
+
+class Zombie extends Enemy
+{   constructor(x, y, direction)
+    {   super(x, y, direction, 100, "zombie");
+        this.baseVelocity = canvas.width * 0.001 * this.direction * time.statesConfigMultipliers[time.state].zombies.baseVelocity;
+        this.xVelocity = this.baseVelocity;
+        this.framesSprite = { walking: 15, attacking: 5 };
+
+        this.damage = 17 / FPS;
+    }
+}
+
+class Runner extends Enemy
+{   constructor(x, y, direction)
+    {   super(x, y, direction, 150, "runner");
+        this.baseVelocity = canvas.width * 0.002 * this.direction * time.statesConfigMultipliers[time.state].zombies.baseVelocity;
+        this.xVelocity = this.baseVelocity;
+        this.framesSprite = { walking: 5, attacking: 5 };
+
+        this.damage = 10 / FPS;
+    }
+}
+
+class Dancer extends Enemy
+{   constructor(x, y, direction)
+    {   super(x, y, direction, 125, "dancer");
+        this.baseVelocity = canvas.width * 0.001 * this.direction * time.statesConfigMultipliers[time.state].zombies.baseVelocity;
+        this.xVelocity = this.baseVelocity;
+        this.framesSprite = { walking: 15, attacking: 5 };
+
+        this.damage = 7 / FPS;
+        this.projectiles = [];
+        this.delayShoot = 1.9 * FPS;
+        this.countShoot = 0;
+    }
+
+    shoot()
+    {   this.projectiles.push(new Projectile(this.x, this.y, canvas.height * 0.03, canvas.height * 0.03, "dancer-projectile.png", 25, this.direction * (canvas.width * 0.01), 0));
+    }
+
+    update()
+    {   super.update();
+        for (let i = 0; i < this.projectiles.length; i++)
+        {   let projectile = this.projectiles[i];
+            let plants = [];
+            for (let i = 0; (i < pots.list.length); i++)
+            {   if (pots.list[i].plant !== null)
+                {   plants.push(pots.list[i].plant)
+                }
+            }
+            projectile.update();
+            if ((projectile.x + projectile.width < 0 || projectile.x > canvas.width) || projectile.collide(plataforms.list) || projectile.collide([player]) || projectile.collide([dave]) || projectile.collide(plants))
+            {   this.projectiles.splice(i, 1);
+                i--;
+            }
+        }
+        this.countShoot++;
+
+        if (this.xVelocity)
+        {   if (this.countShoot >= this.delayShoot)
+            {   this.countShoot = 0;
+                this.shoot();
+            }
+        }
+    }
+
+    draw()
+    {   super.draw();
+        for (let i = 0; i < this.projectiles.length; i++)
+        {   let projectile = this.projectiles[i];
+            projectile.draw();
+        }
+    }
+}
+
+

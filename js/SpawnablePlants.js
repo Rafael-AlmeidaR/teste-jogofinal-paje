@@ -1,0 +1,243 @@
+class SpawnablePlant extends Entity
+{   constructor(x, y, width, heigth, image, direction, life, price, type)
+    {   super(x, y, width, heigth, image, direction, life);
+        this.price = price;
+        this.framesSprite = { idle: 7, attacking: 5 };
+        this.sprites =
+        {   attacking:
+            [
+                new Image(),
+                new Image(),
+                new Image(),
+                new Image()
+            ],
+idle:
+            [
+                new Image(),
+                new Image(),
+                new Image(),
+                new Image()
+            ]
+        }
+
+        if (type != "wallnut")
+        {   if (type != "cherry")
+            {   for (let i = 0; i < this.sprites.idle.length; i++)
+                {   this.sprites.idle[i].src = "./imgs/sprites/" + type + "/" + type + "-idle-" + i + ".png";
+                }
+            }
+
+            for (let i = 0; i < this.sprites.attacking.length; i++)
+            {   this.sprites.attacking[i].src = "./imgs/sprites/" + type + "/" + type + "-attacking-" + i + ".png";
+            }
+        }
+
+        this.currentFrame = 0;
+        this.currentSprite = 0;
+        this.state = "idle";
+
+    }
+
+    update()
+    {   this.life.actual -= (this.life.max / this.lifeTime) / FPS;
+        this.animate();
+    }
+
+    animate()
+    {   this.currentFrame = (this.currentFrame + 1) % (this.sprites[this.state].length * this.framesSprite[this.state]);
+        this.currentSprite = (this.currentSprite + !(this.currentFrame % this.framesSprite[this.state])) % this.sprites[this.state].length;
+        this.image = this.sprites[this.state][this.currentSprite];
+    }
+}
+
+// Cereja
+class CherryPlant extends SpawnablePlant
+{   constructor(x, y, width, height, direction)
+    {   super(x, y, width, height, "cherry.png", direction, 1, 1000, "cherry");
+        this.lifeTime = 2;
+        this.state = "attacking";
+        this.framesSprite.attacking = this.lifeTime * FPS / 4;
+    }
+    update()
+    {   super.update();
+        if (this.life.actual <= (this.life.max / this.lifeTime) / FPS)
+        {   sounds.cherryBomb.play();
+            while (graves.enemies.length)
+            {   graves.enemies.splice(0, 1);
+                player.suns += 50;
+            }
+        }
+    }
+}
+// Repolho
+class CabbagePlant extends SpawnablePlant
+{   constructor(x, y, width, height, direction)
+    {   super(x - (direction == 1) * width / 2, y - height / 3, width * 1.5, height * 1.5, "cabbage.png", direction, 100, 250, "cabbage");
+        this.lifeTime = 30;
+        this.projectiles = [];
+        this.delayShoot = 1.7 * FPS;
+        this.countShoot = 0;
+    }
+
+    shoot()
+    {   this.projectiles.push(new Projectile(this.x, this.y, canvas.height * 0.03, canvas.height * 0.03, "cabbage-projectile.png", 40, this.direction * (canvas.width * 0.01), -(canvas.height * 0.002)));
+    }
+
+    update()
+    {   super.update();
+        for (let i = 0; i < this.projectiles.length; i++)
+        {   let projectile = this.projectiles[i];
+            projectile.yVelocity += canvas.height * 0.00014;
+            projectile.update();
+            if ((projectile.x + projectile.width < 0 || projectile.x > canvas.width) || projectile.collide(plataforms.list) || projectile.collide(graves.enemies, true))
+            {   this.projectiles.splice(i, 1);
+                i--;
+            }
+        }
+        this.countShoot++;
+
+
+        if (this.countShoot >= this.delayShoot)
+        {   this.countShoot = 0;
+            this.shoot();
+        }
+
+        if (((this.countShoot >= (this.delayShoot - this.framesSprite.attacking * 2)) || (this.countShoot <= (this.framesSprite.attacking * 2))) && this.life.actual < this.life.max - ((this.life.max / this.lifeTime) / FPS) * (this.framesSprite.attacking * 2))
+        {   if (this.state != "attacking")
+            {   this.currentFrame = 0;
+                this.currentSprite = 0;
+            }
+            this.state = "attacking";
+
+        }
+        else
+        {   if (this.state != "idle")
+            {   this.currentFrame = 0;
+                this.currentSprite = 0;
+            }
+            this.state = "idle";
+        }
+    }
+
+    draw()
+    {   super.draw();
+        for (let i = 0; i < this.projectiles.length; i++)
+        {   let projectile = this.projectiles[i];
+            projectile.draw();
+        }
+    }
+}
+// Noz
+class WallNutPlant extends SpawnablePlant
+{   constructor(x, y, width, height, direction)
+    {   super(x, y, width, height, "wall-nut.png", direction, 250, 500, "wallnut");
+        this.lifeTime = 60;
+    }
+
+    update()
+    {   this.life.actual -= (this.life.max / this.lifeTime) / FPS;
+    }
+}
+// Girassol
+class SunflowerPlant extends SpawnablePlant
+{   constructor(x, y, width, height, direction)
+    {   super(x, y, width, height, "sunflower.png", direction, 500, 450, "sunflower");
+        this.lifeTime = 35;
+
+        this.framesSprite.attacking = this.framesSprite.idle;
+
+        this.gainSunsPerLifeTime = this.lifeTime * 26;
+        this.gainSunsDelay = this.lifeTime / 5;
+        this.gaveSunsCount = 0;
+
+        this.state = "idle";
+
+    }
+
+    update()
+    {   super.update();
+        this.gaveSunsCount++;
+        if (this.gaveSunsCount % (this.gainSunsDelay * FPS) == 0)
+        {   player.suns += this.gainSunsPerLifeTime / this.gainSunsDelay;
+            sounds.gainSuns.play();
+        }
+
+        if ((this.gaveSunsCount % (this.gainSunsDelay * FPS)) < (this.framesSprite.attacking * 4) && this.life.actual < this.life.max - ((this.life.max / this.lifeTime) / FPS) * (this.framesSprite.attacking * 4))
+        {   this.state = "attacking";
+
+        }
+        else
+        {   this.state = "idle";
+        }
+    }
+}
+// Carnívora
+class CarnivorousPlant extends SpawnablePlant
+{   constructor(x, y, width, height, direction)
+    {   super(x - (direction == -1) * width / 3, y - height / 3, width * 1.3, height * 1.5, "carnivorous.png", direction, 500, 300, "carnivorous");
+        this.lifeTime = 25;
+
+        this.degustationTime = 5;
+        this.degustationCount = 0;
+
+        this.rangeAttack = canvas.height * 0.12;
+        this.range = new Entity((this.x + this.width / 2) - (this.direction == -1) * this.rangeAttack, this.y + this.height / 2, this.rangeAttack, 0);
+
+        this.framesSprite.tasting = 10;
+
+        this.sprites.tasting = [
+                                   new Image(),
+                                   new Image(),
+                                   new Image(),
+                               ];
+
+        for (let i = 0; i < this.sprites.tasting.length; i++)
+        {   this.sprites.tasting[i].src = "./imgs/sprites/carnivorous/carnivorous-tasting-" + i + ".png";
+        }
+
+    }
+
+    update()
+    {   super.update();
+
+        switch (this.state)
+        {   case "idle":
+                this.proximityToZombie();
+                break;
+            case "tasting":
+                this.taste();
+                break;
+            case "attacking":
+                if (this.currentFrame == (this.framesSprite.attacking * this.sprites.attacking.length - 1))
+                {   this.state = "tasting";
+                    this.currentFrame = 0;
+                    this.currentSprite = 0;
+                }
+        }
+
+    }
+
+    proximityToZombie()
+    {   let collided = false;
+        for (let i = 0; i < graves.enemies.length && !collided; i++)
+        {   let enemy = graves.enemies[i];
+            if (this.range.collide(enemy))
+            {   graves.enemies.splice(i, 1);
+                collided = true;
+                player.suns += 50;
+                this.state = "attacking";
+                this.currentFrame = 0;
+                this.currentSprite = 0;
+            }
+        }
+    }
+
+    taste()
+    {   this.degustationCount++;
+        if (this.degustationCount % (this.degustationTime * FPS) == 0)
+        {   this.state = "idle";
+            this.currentFrame = 0;
+            this.currentSprite = 0;
+        }
+    }
+}

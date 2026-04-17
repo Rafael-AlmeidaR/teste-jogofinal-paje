@@ -1,0 +1,13 @@
+class DaveDoidao extends Entity
+{   constructor()
+    {   super(canvas.width * 0.45, canvas.height * 0.79, canvas.width * 0.08, canvas.height * 0.2, "dave-doidao.png", 1, 100);
+    }
+
+    update()
+    {   if (this.life.actual <= 0)
+        {   clearInterval(timer);
+            sounds.loseMusic.play()
+            timer = setInterval(deathScreen, 1000 / FPS);
+        }
+    }
+}

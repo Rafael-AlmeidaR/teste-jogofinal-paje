@@ -1,0 +1,234 @@
+class Plant extends Entity {
+    constructor(width, height, image, config) {   // config -> {
+        //      life,
+        //      speed,
+        //      damage,
+        //      fireRate
+        //
+        // }
+        super(canvas.width / 2 - width / 2, canvas.height * 0.25, width, height, image, 1, config.life)
+        this.xVelocity = 0;
+        this.yVelocity = 0;
+        this.baseSpeed = config.speed;
+        this.fireRate = { actual: 0, max: config.fireRate };
+        this.shootImage = config.shootImage;
+        this.shootSize = config.shootSize;
+
+        this.gravity = canvas.height * 0.0021772939346811817;
+        this.jumpForce = canvas.height * 0.035;
+
+        this.projectiles = [];
+        this.damage = config.damage;
+        this.speedSettings = { time: 20 * FPS, counter: 0, effect: 0.3 };
+        this.strengthSettings = { time: 20 * FPS, counter: 0, effect: 0.35 };
+        this.enemiesKilled = 0;
+        this.suns = 0;
+
+
+        this.sprites =
+        {
+            idle:
+                [
+                    new Image(),
+                    new Image(),
+                    new Image(),
+                    new Image()
+                ],
+            attacking:
+                [
+                    new Image(),
+                    new Image(),
+                    new Image(),
+                    new Image()
+                ]
+        }
+        this.framesSprite = config.framesSprite;
+
+        for (let i = 0; i < this.sprites.attacking.length; i++) {
+            this.sprites.attacking[i].src = "./imgs/sprites/" + config.type + "/" + config.type + "-attacking-" + i + ".png";
+        }
+
+        for (let i = 0; i < this.sprites.idle.length; i++) {
+            this.sprites.idle[i].src = "./imgs/sprites/" + config.type + "/" + config.type + "-idle-" + i + ".png";
+        }
+
+        this.currentFrame = 0;
+        this.currentSprite = 0;
+        this.state = "idle";
+        this.activeAttackingAnimation = 0;
+    }
+
+    update() {
+        this.movement();
+        this.yVelocity += this.gravity;
+        this.y += this.yVelocity;
+        if (this.collide(plataforms.list)) {
+            this.y -= this.yVelocity;
+            this.yVelocity = this.yVelocity < 0 ? this.gravity : 0;
+        }
+        this.x += this.xVelocity;
+        if (this.collide(plataforms.list)) {
+            this.x -= this.xVelocity;
+        }
+        if (this.x < -this.width || this.x > canvas.width) {
+            this.x = canvas.width - (this.x + this.width);
+
+        }
+
+        this.action();
+        for (let i = 0; (i < this.projectiles.length); i++) {
+            let projectile = this.projectiles[i];
+            projectile.update();
+            if ((projectile.x < 0 || projectile.x > canvas.width) || projectile.collide(plataforms.list) || projectile.collide(graves.enemies, true)) {
+                this.projectiles.splice(i, 1);
+                i--;
+            }
+        }
+
+        if (this.state == "attacking") {
+            if (this.activeAttackingAnimation == (this.framesSprite.attacking * this.sprites.attacking.length / 2)) {
+                this.shoot();
+            }
+            else {
+                if (this.activeAttackingAnimation <= 0) {
+                    this.state = "idle";
+                    this.currentFrame = 0;
+                    this.currentSprite = 0;
+                }
+            }
+            this.activeAttackingAnimation--;
+        }
+
+        if (this.life.actual <= 0) {
+            this.respawn();
+        }
+
+        this.speedSettings.counter -= this.speedSettings.counter > 0;
+        this.strengthSettings.counter -= this.strengthSettings.counter > 0;
+        this.fireRate.actual -= this.fireRate.actual > 0;
+        this.animate();
+    }
+
+    movement() {
+        if (keys[65]) {
+            this.xVelocity = -this.baseSpeed * (1 + (this.speedSettings.effect * (this.speedSettings.counter > 0)));
+            this.direction = -1;
+        }
+        else {
+            if (keys[68]) {
+                this.xVelocity = this.baseSpeed * (1 + (this.speedSettings.effect * (this.speedSettings.counter > 0)));
+                this.direction = 1;
+            }
+            else {
+                this.xVelocity = 0;
+            }
+        }
+
+        if (keys[32] && !this.yVelocity) {
+            this.yVelocity -= this.jumpForce;
+        }
+    }
+
+    action() {
+        if (keys[69] && this.fireRate.actual <= 0) {
+            this.activeAttackingAnimation = this.framesSprite.attacking * this.sprites.attacking.length;
+            this.state = "attacking";
+            this.fireRate.actual = this.fireRate.max;
+            this.currentFrame = 0;
+            this.currentSprite = 0;
+        }
+    }
+
+    shoot() {
+        this.projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height / 5, this.shootSize, this.shootSize, this.shootImage, this.damage * (1 + (this.strengthSettings.effect * (this.strengthSettings.counter > 0))), this.direction * (canvas.width * 0.02), 0, this.sounds.impact[Math.trunc(Math.random() * this.sounds.impact.length)]));
+    }
+
+    collide(entities) {
+        for (let i = 0; (i < entities.length); i++) {
+            if (super.collide(entities[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    respawn() {
+        this.x = (canvas.width / 2) - this.width / 2;
+        this.y = canvas.height * 0.25;
+        this.life.actual = this.life.max;
+    }
+
+    animate() {
+        this.currentFrame = (this.currentFrame + 1) % (this.sprites[this.state].length * this.framesSprite[this.state]);
+        this.currentSprite = (this.currentSprite + !(this.currentFrame % this.framesSprite[this.state])) % this.sprites[this.state].length;
+        this.image = this.sprites[this.state][this.currentSprite];
+    }
+
+    draw() {
+        for (let i = 0; (i < this.projectiles.length); i++) {
+            this.projectiles[i].draw();
+        }
+        super.draw()
+        if (this.speedSettings.counter > 0) {
+            context.fillStyle = "white";
+            context.fillRect(this.x, this.y - this.height / 3, this.width, 5)
+
+            context.fillStyle = "yellow";
+            context.fillRect(this.x, this.y - this.height / 3, this.width * this.speedSettings.counter / this.speedSettings.time, 5)
+        }
+        if (this.strengthSettings.counter > 0) {
+            context.fillStyle = "white";
+            context.fillRect(this.x, this.y - this.height / 3 - (this.height / 6 * (this.speedSettings.counter > 0)), this.width, 5)
+
+            context.fillStyle = "red";
+            context.fillRect(this.x, this.y - this.height / 3 - (this.height / 6 * (this.speedSettings.counter > 0)), this.width * this.strengthSettings.counter / this.strengthSettings.time, 5)
+        }
+    }
+}
+
+// ===========================================================================================================================
+
+class Peashooter extends Plant {
+    constructor() {
+        super(canvas.height * 0.085, canvas.height * 0.1, "peashooter.png",
+            { life: 65, damage: 30, shootImage: "peashooter-projectile.png", speed: canvas.width * 0.01, fireRate: 20, shootSize: canvas.height * 0.03, type: "peashooter", framesSprite: { idle: 10, attacking: 5 } }
+        );
+
+        this.sounds = {
+            impact: [sounds.splat0, sounds.splat1]
+        };
+    }
+
+}
+
+class GatlingPea extends Plant {
+    constructor() {
+        super(canvas.height * 0.085, canvas.height * 0.1, "gatling-pea.png",
+            { life: 50, damage: 14, shootImage: "peashooter-projectile.png", speed: canvas.width * 0.009, fireRate: 8, shootSize: canvas.height * 0.02, type: "gatling-pea", framesSprite: { idle: 10, attacking: 2 } }
+        );
+
+        this.sounds = {
+            impact: [sounds.splat0, sounds.splat1]
+        };
+    }
+
+}
+
+class KernelPult extends Plant {
+    constructor() {
+        super(canvas.height * 0.085, canvas.height * 0.12, "kernel-pult.png",
+            { life: 35, damage: 45, shootImage: "kernel-pult-projectile.png", speed: canvas.width * 0.011, fireRate: 30, shootSize: canvas.height * 0.03, type: "kernel-pult", framesSprite: { idle: 5, attacking: 5 } }
+        );
+
+        this.sounds = {
+            impact: [sounds.kernelPultSplat]
+        };
+    }
+
+    update() {
+        super.update();
+        for (let i = 0; (i < this.projectiles.length); i++) {
+            this.projectiles[i].yVelocity += canvas.height * 0.00014;
+        }
+    }
+}

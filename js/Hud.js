@@ -1,0 +1,79 @@
+class Hud
+{   constructor()
+    {   this.progressBar = new Image();
+        this.progressBar.src = "./imgs/progress-bar.png";
+
+        this.progress = new Image();
+        this.progress.src = "./imgs/progress.png";
+
+        this.zombieHead = new Image();
+        this.zombieHead.src = "./imgs/zombie-head.png";
+
+        this.sun = new Image();
+        this.sun.src = "./imgs/sun.png";
+
+        this.spawnnablePlants = [
+                                    new Image(),
+                                    new Image(),
+                                    new Image(),
+                                    new Image(),
+                                    new Image()
+                                ];
+        this.spawnnablePlants[0].src = "./imgs/cherry.png";
+        this.spawnnablePlants[1].src = "./imgs/cabbage.png";
+        this.spawnnablePlants[2].src = "./imgs/wall-nut.png";
+        this.spawnnablePlants[3].src = "./imgs/sunflower.png";
+        this.spawnnablePlants[4].src = "./imgs/carnivorous.png";
+
+        this.spawnnablePlantsClass = [CherryPlant, CabbagePlant, WallNutPlant, SunflowerPlant, CarnivorousPlant];
+    }
+
+    draw()
+    {   context.fillStyle = "rgba(0, 0, 0, 0.9)";
+        context.fillRect(canvas.width * 0.1, 0, canvas.width * 0.25, canvas.width * 0.06)
+        context.fillStyle = "black";
+        context.font = "28px Arial";
+        context.textAlign = "left";
+        context.fillText("WAVE " + wave.actualWave, canvas.width * 0.5, canvas.height * 0.06);
+
+        context.drawImage(this.progressBar, canvas.width * 0.6, canvas.height * 0.02, canvas.width * 0.2, canvas.height * 0.045);
+        context.drawImage(this.progress, canvas.width * 0.7959, canvas.height * 0.033, -canvas.width * 0.191 * (wave.waveFrames / wave.waveDuration), canvas.height * 0.02);
+        context.drawImage(this.zombieHead,
+                          canvas.width * 0.7959 - canvas.width * 0.191 * (wave.waveFrames / wave.waveDuration) - canvas.width * 0.015,
+                          canvas.height * 0.023,
+                          canvas.width * 0.03,
+                          canvas.height * 0.035);
+
+        context.fillText(player.suns, canvas.width * 0.9, canvas.height * 0.06);
+        context.drawImage(this.sun, canvas.width * 0.86, canvas.height * 0.015, canvas.width * 0.03, canvas.height * 0.06);
+
+        for (let i = 0; (i < this.spawnnablePlants.length); i++)     //desenha planta
+        {   context.drawImage(this.spawnnablePlants[i], canvas.width * 0.1 + i * canvas.width * 0.05, 0, canvas.width * 0.05, canvas.width * 0.05);
+            let tempPlant = new this.spawnnablePlantsClass[i](0, 0, 0, 0, 0);
+
+            //imagem branca em cima para maior legibilidade
+            context.fillStyle = "rgba(255, 255, 255," + 0.2 * (player.suns < tempPlant.price) + ")";
+            context.fillRect(canvas.width * 0.1 + i * canvas.width * 0.05, 0, canvas.width * 0.05, canvas.width * 0.06);
+
+            //escreve a tecla
+            context.fillStyle = "white";
+            context.font = "bold 24px Arial";
+            context.textAlign = "left";
+
+            context.fillText(i + 1, canvas.width * 0.1 + (i * canvas.width * 0.05) + canvas.width * 0.005, canvas.width * 0.02);
+
+            //escreve o preço da planta
+            context.font = "bold 18px Arial";
+            context.textAlign = "right";
+            context.fillText(tempPlant.price, canvas.width * 0.145 + i * canvas.width * 0.05, canvas.width * 0.055);
+
+            //desenha o sol
+            context.drawImage(this.sun, canvas.width * 0.103 + i * canvas.width * 0.05, canvas.width * 0.055 - canvas.height * 0.025, canvas.width * 0.015, canvas.height * 0.03);
+
+            //desenha a borda
+            context.lineWidth = 5;
+            context.strokeRect(canvas.width * 0.1 + i * canvas.width * 0.05, 0, canvas.width * 0.05, canvas.width * 0.06);
+        }
+
+    }
+}

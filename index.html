@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonitezas</title>
+    <script src="js/Entity.js"></script>
+    <script src="js/Plant.js"></script>
+    <script src="js/Plataforms.js"></script>
+    <script src="js/Projectile.js"></script>
+    <script src="js/DaveDoidao.js"></script>
+    <script src="js/Wave.js"></script>
+    <script src="js/Enemy.js"></script>
+    <script src="js/Grave.js"></script>
+    <script src="js/Pot.js"></script>
+    <script src="js/SpawnablePlants.js"></script>
+    <script src="js/PowerUps.js"></script>
+    <script src="js/Hud.js"></script>
+    <script src="js/Menu.js"></script>
+    <script src="js/Sounds.js"></script>
+    <script src="js/Clouds.js"></script>
+    <script src="js/Time.js"></script>
+</head>
+
+<body>
+    <style>
+        * {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+    <canvas id="canvas"></canvas>
+    <script>
+        let canvas = document.getElementById("canvas");
+        let context = canvas.getContext("2d");
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
+
+        let FPS = 30;
+        let keys = [];
+
+        let menu = new Menu();
+        let player;
+        let plataforms = new Plataforms();
+        let dave = new DaveDoidao();
+        let graves = new Graves();
+        let wave = new Wave();
+        let hud = new Hud();
+        let pots = new Pots();
+        let powerUps = new PowerUps();
+        let sounds = new Sounds();
+        let clouds = new Clouds();
+        let time = new Time();
+
+        let timer = setInterval(gameMenu, 1000 / FPS);
+
+        function loop() {
+            time.update();
+            time.draw();
+
+            player.update();
+            graves.update();
+            dave.update();
+            wave.update();
+            pots.update();
+            powerUps.update();
+            clouds.update();
+
+            clouds.draw();
+            plataforms.draw();
+            graves.draw();
+            pots.draw();
+            powerUps.draw();
+            player.draw();
+            dave.draw();
+            hud.draw();
+        }
+
+
+        function gameMenu() {
+            menu.update();
+            menu.draw();
+        }
+
+        document.addEventListener("keydown", keyDown)
+        document.addEventListener("keyup", keyUp)
+
+        function keyDown(event) {
+            keys[event.keyCode] = true;
+        }
+        function keyUp(event) {
+            keys[event.keyCode] = false;
+        }
+
+
+        let timerBackground = 0;
+        let positionUpperText = 0;
+        let secondTimerBackground = 0;
+        let scoreTimer = 0;
+        let mockScore = 0;
+        let retryTimer = 0;
+        function deathScreen() {
+            context.fillStyle = "rgba(0,0,0," + timerBackground / 100 + ")";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.font = "bold 70px arial";
+            context.fillStyle = "red";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            if (timerBackground < 10) {
+                timerBackground += 0.25;
+            } else {
+                timerBackground = 100;
+                positionUpperText += 4;
+                context.fillText("GAME OVER", canvas.width / 2, Math.min(canvas.height / 2 - 25, positionUpperText));
+                context.fillStyle = "white";
+                if (positionUpperText >= canvas.height / 2 - 25) {
+                    if (secondTimerBackground < FPS) {
+                        secondTimerBackground++;
+                    } else {
+                        if (scoreTimer < 10 && mockScore < player.enemiesKilled) {
+                            scoreTimer++;
+                        } else {
+                            mockScore += 8;
+                        }
+                        context.font = "50px arial";
+                        context.fillText("ZUMBIS DERROTADOS: " + Math.min(player.enemiesKilled, mockScore), canvas.width / 2, canvas.height / 2 + 25);
+                        if (mockScore >= player.enemiesKilled && retryTimer < 100) {
+                            retryTimer += 2;
+                        }
+                        context.fillStyle = "rgba(255,255,255," + retryTimer / 100 + ")";
+                        context.fillText("Jogar novamente?", canvas.width / 2, canvas.height / 2 + 150);
+                        if (retryTimer >= 100 && keys[13]) {
+                            window.location.reload();
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
